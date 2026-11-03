@@ -1,0 +1,35 @@
+NexusXDR build snapshot — 2026-10-31
+====================================
+
+Files in this folder
+  NexusAV.Engine.exe   37 410 456 bytes   single-file self-contained engine (win-x64)
+  NexusXDR.exe        109 355 845 bytes   single-file console with this engine embedded
+  SHA256SUMS.txt                          lower-case hashes of both files
+
+Source state this build was made from
+  ActiveGuardian rules            116      (PS-ENCODED now needs "-enc " AND "command";
+                                            PS-IEX downgraded high -> medium)
+  ScriptGuard AMSI rules           39      (SCR-ATOMIC-TEST removed)
+  Guard startup self-test          18 benign command lines, 0 killable faults
+  Default response mode      detect-only   EngineState.DetectOnlyMode = 1
+  Harness rules ART-RUNNER / ART-REPO / ART-MODULE / SCR-ATOMIC-TEST: absent from source
+
+Runtime evidence recorded while producing this snapshot
+  engine -c Release, --no-harden, 14 s headless run:
+    [GUARD] self-test done benign_lines=18 killable_faults=0 rules=116
+    NEXUS_EVENT {"t":"status",...,"s":"engine_log=...\\engine.log response=detect"}
+
+  real detect-only run (same engine, own child process):
+    launched: powershell.exe -NoProfile -EncodedCommand <base64 of "Start-Sleep -Seconds 10">
+    result:   [RESPONSE] detect-only mode - pid=4252 NOT killed, reason=guard rule PS-ENCODED2 (T1027) sev=high
+              action="kill-refused", the child kept running and exited on its own after 10 s
+    log:      .smoke\engine_detectonly_e2e.log
+
+Packaging proof
+  NexusXDR.exe --extract-engine <file> writes the unpacked engine path. Extracted
+  C:\ProgramData\NexusXDR\bin\NexusAV.Engine.6de14fee.exe has the same SHA-256 as
+  NexusAV.Engine.exe in this folder (c774635d...), so the console really ships this engine.
+
+How to re-check
+  powershell -NoProfile -Command "Get-FileHash NexusAV.Engine.exe,NexusXDR.exe -Algorithm SHA256"
+  NexusAV.Engine.exe --no-harden     (expect: rules=116, benign_lines=18, response=detect)
